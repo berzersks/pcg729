@@ -5,7 +5,7 @@ sudo bin/spc build --build-cli "bcg729,psampler,opus,swoole,bcmath,bz2,ctype,cur
 
 sudo bin/spc build --build-cli "opus" --enable-zts
 
-
+bin/spc download psampler --for
 
 bin/spc download psampler
 
