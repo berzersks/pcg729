@@ -1,5 +1,10 @@
 # PCG729
 
+
+
+OBS: in progress
+
+
 ## Descrição
 Este repositório contém o projeto `pcg729`, desenvolvido e mantido por `berzersks`. Ele inclui uma estrutura robusta para desenvolvimento em PHP, com diversas dependências e ferramentas configuradas para facilitar o desenvolvimento e a manutenção do código.
 
