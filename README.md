@@ -14,6 +14,9 @@ Abaixo está uma visão geral da estrutura do projeto:
 ## Dependências
 As dependências do projeto são gerenciadas pelo Composer. Certifique-se de instalar o Composer antes de configurar o projeto.
 
+
+
+
 ## Configuração
 1. Instale as dependências do projeto:
    ```bash
