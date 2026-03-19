@@ -71,6 +71,7 @@ final class StatementIndentationFixer extends AbstractFixer implements Configura
         \T_IMPLEMENTS,
         \T_CONST,
         FCT::T_MATCH,
+        FCT::T_ENUM,
     ];
     private const CONTROL_STRUCTURE_POSSIBIBLY_WITHOUT_BRACES_TOKENS = [
         \T_IF,
@@ -110,7 +111,7 @@ final class StatementIndentationFixer extends AbstractFixer implements Configura
                               echo "bar";
                         }
 
-                        PHP
+                        PHP,
                 ),
                 new CodeSample(
                     <<<'PHP'
@@ -124,7 +125,7 @@ final class StatementIndentationFixer extends AbstractFixer implements Configura
                         }
 
                         PHP,
-                    ['stick_comment_to_next_continuous_control_statement' => false]
+                    ['stick_comment_to_next_continuous_control_statement' => false],
                 ),
                 new CodeSample(
                     <<<'PHP'
@@ -143,9 +144,9 @@ final class StatementIndentationFixer extends AbstractFixer implements Configura
                         }
 
                         PHP,
-                    ['stick_comment_to_next_continuous_control_statement' => true]
+                    ['stick_comment_to_next_continuous_control_statement' => true],
                 ),
-            ]
+            ],
         );
     }
 
@@ -381,7 +382,7 @@ final class StatementIndentationFixer extends AbstractFixer implements Configura
                     'end_index' => $endIndex,
                     'end_index_inclusive' => true,
                     'initial_indent' => $this->getLineIndentationWithBracesCompatibility($tokens, $index, $lastIndent),
-                    'is_indented_block' => $isPropertyStart || $token->isGivenKind([\T_EXTENDS, \T_IMPLEMENTS, \T_CONST]),
+                    'is_indented_block' => $isPropertyStart || $token->isGivenKind([\T_EXTENDS, \T_IMPLEMENTS, \T_CONST, \T_CASE]),
                 ];
 
                 continue;
@@ -513,7 +514,7 @@ final class StatementIndentationFixer extends AbstractFixer implements Configura
                     $content = Preg::replace(
                         '/(\R+)\h*$/',
                         '$1'.$whitespaces,
-                        $content
+                        $content,
                     );
 
                     $previousLineNewIndent = $this->extractIndent($content);
@@ -521,7 +522,7 @@ final class StatementIndentationFixer extends AbstractFixer implements Configura
                     $content = Preg::replace(
                         '/(\R)'.$scopes[$currentScope]['initial_indent'].'(\h*)$/D',
                         '$1'.$scopes[$currentScope]['new_indent'].'$2',
-                        $content
+                        $content,
                     );
                 }
 
@@ -543,7 +544,7 @@ final class StatementIndentationFixer extends AbstractFixer implements Configura
                         Preg::replace(
                             '/(\R)'.preg_quote($previousLineInitialIndent, '/').'(\h*\S+.*)/',
                             '$1'.$previousLineNewIndent.'$2',
-                            $nextToken->getContent()
+                            $nextToken->getContent(),
                         ),
                     ]);
                 }
@@ -680,8 +681,8 @@ final class StatementIndentationFixer extends AbstractFixer implements Configura
                 $braceIndex = $tokens->getNextMeaningfulToken(
                     $tokens->findBlockEnd(
                         Tokens::BLOCK_TYPE_PARENTHESIS_BRACE,
-                        $tokens->getNextMeaningfulToken($index)
-                    )
+                        $tokens->getNextMeaningfulToken($index),
+                    ),
                 );
 
                 if ($tokens[$braceIndex]->equals(':')) {

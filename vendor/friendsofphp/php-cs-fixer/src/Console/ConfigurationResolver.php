@@ -21,6 +21,9 @@ use PhpCsFixer\Cache\FileCacheManager;
 use PhpCsFixer\Cache\FileHandler;
 use PhpCsFixer\Cache\NullCacheManager;
 use PhpCsFixer\Cache\Signature;
+use PhpCsFixer\Config\NullRuleCustomisationPolicy;
+use PhpCsFixer\Config\RuleCustomisationPolicyAwareConfigInterface;
+use PhpCsFixer\Config\RuleCustomisationPolicyInterface;
 use PhpCsFixer\ConfigInterface;
 use PhpCsFixer\ConfigurationException\InvalidConfigurationException;
 use PhpCsFixer\Console\Output\Progress\ProgressOutputType;
@@ -185,6 +188,8 @@ final class ConfigurationResolver
 
     private ?bool $isUnsupportedPhpVersionAllowed = null;
 
+    private ?RuleCustomisationPolicyInterface $ruleCustomisationPolicy = null;
+
     private ?FixerFactory $fixerFactory = null;
 
     /**
@@ -237,10 +242,11 @@ final class ConfigurationResolver
                         $this->toolInfo->getVersion(),
                         $this->getConfig()->getIndent(),
                         $this->getConfig()->getLineEnding(),
-                        $this->getRules()
+                        $this->getRules(),
+                        $this->getRuleCustomisationPolicy()->getPolicyVersionForCache(),
                     ),
                     $this->isDryRun(),
-                    $this->getDirectory()
+                    $this->getDirectory(),
                 );
             }
         }
@@ -325,19 +331,9 @@ final class ConfigurationResolver
     public function getDirectory(): DirectoryInterface
     {
         if (null === $this->directory) {
-            $path = $this->getCacheFile();
-            if (null === $path) {
-                $absolutePath = $this->cwd;
-            } else {
-                $filesystem = new Filesystem();
+            $cwd = realpath($this->cwd);
 
-                $absolutePath = $filesystem->isAbsolutePath($path)
-                    ? $path
-                    : $this->cwd.\DIRECTORY_SEPARATOR.$path;
-                $absolutePath = \dirname($absolutePath);
-            }
-
-            $this->directory = new Directory($absolutePath);
+            $this->directory = new Directory(false !== $cwd ? $cwd : $this->cwd);
         }
 
         return $this->directory;
@@ -360,8 +356,8 @@ final class ConfigurationResolver
                     static fn (FixerInterface $fixer): string => $fixer->getName(),
                     array_values(array_filter(
                         $this->fixers,
-                        static fn (FixerInterface $fixer): bool => $fixer->isRisky()
-                    ))
+                        static fn (FixerInterface $fixer): bool => $fixer->isRisky(),
+                    )),
                 );
 
                 if (\count($riskyFixers) > 0) {
@@ -411,13 +407,13 @@ final class ConfigurationResolver
                         if (!file_exists($absolutePath)) {
                             throw new InvalidConfigurationException(\sprintf(
                                 'The path "%s" is not readable.',
-                                $path
+                                $path,
                             ));
                         }
 
                         return $absolutePath;
                     },
-                    $this->options['path']
+                    $this->options['path'],
                 );
             }
         }
@@ -444,7 +440,7 @@ final class ConfigurationResolver
                     throw new InvalidConfigurationException(\sprintf(
                         'The progress type "%s" is not defined, supported are %s.',
                         $progressType,
-                        Utils::naturalLanguageJoin(ProgressOutputType::all())
+                        Utils::naturalLanguageJoin(ProgressOutputType::all()),
                     ));
                 }
 
@@ -530,6 +526,19 @@ final class ConfigurationResolver
         }
 
         return $this->isUnsupportedPhpVersionAllowed;
+    }
+
+    public function getRuleCustomisationPolicy(): RuleCustomisationPolicyInterface
+    {
+        if (null === $this->ruleCustomisationPolicy) {
+            $config = $this->getConfig();
+            if ($config instanceof RuleCustomisationPolicyAwareConfigInterface) {
+                $this->ruleCustomisationPolicy = $config->getRuleCustomisationPolicy();
+            }
+            $this->ruleCustomisationPolicy ??= new NullRuleCustomisationPolicy();
+        }
+
+        return $this->ruleCustomisationPolicy;
     }
 
     /**
@@ -722,6 +731,8 @@ final class ConfigurationResolver
         $this->configRulesAreOverridden = null !== $this->options['rules'];
 
         if (null === $this->options['rules']) {
+            $this->configRulesAreOverridden = false;
+
             return $this->getConfig()->getRules();
         }
 
@@ -753,6 +764,8 @@ final class ConfigurationResolver
                 $rules[$rule] = true;
             }
         }
+
+        $this->configRulesAreOverridden = true;
 
         return $rules;
     }
@@ -857,7 +870,7 @@ final class ConfigurationResolver
                         '"%s" is renamed (did you mean "%s"?%s), ',
                         $unknownFixer,
                         $renamedRulesFromV2ToV3[$unknownFixer]['new_name'],
-                        isset($renamedRulesFromV2ToV3[$unknownFixer]['config']) ? ' (note: use configuration "'.Utils::toString($renamedRulesFromV2ToV3[$unknownFixer]['config']).'")' : ''
+                        isset($renamedRulesFromV2ToV3[$unknownFixer]['config']) ? ' (note: use configuration "'.Utils::toString($renamedRulesFromV2ToV3[$unknownFixer]['config']).'")' : '',
                     );
                 } else { // Go to normal matcher if it is not a renamed rule
                     $matcher = new WordMatcher($availableFixers);
@@ -865,7 +878,7 @@ final class ConfigurationResolver
                     $message .= \sprintf(
                         '"%s"%s, ',
                         $unknownFixer,
-                        null === $alternative ? '' : ' (did you mean "'.$alternative.'"?)'
+                        null === $alternative ? '' : ' (did you mean "'.$alternative.'"?)',
                     );
                 }
             }
@@ -908,12 +921,12 @@ final class ConfigurationResolver
         if (!\in_array(
             $this->options['path-mode'],
             self::PATH_MODE_VALUES,
-            true
+            true,
         )) {
             throw new InvalidConfigurationException(\sprintf(
                 'The path-mode "%s" is not defined, supported are %s.',
                 $this->options['path-mode'],
-                Utils::naturalLanguageJoin(self::PATH_MODE_VALUES)
+                Utils::naturalLanguageJoin(self::PATH_MODE_VALUES),
             ));
         }
 
@@ -921,7 +934,7 @@ final class ConfigurationResolver
 
         $paths = array_map(
             static fn (string $path): string => realpath($path), // @phpstan-ignore return.type
-            $this->getPath()
+            $this->getPath(),
         );
 
         if (0 === \count($paths)) {
@@ -956,7 +969,7 @@ final class ConfigurationResolver
         if ($isIntersectionPathMode) {
             if (null === $nestedFinder) {
                 throw new InvalidConfigurationException(
-                    'Cannot create intersection with not-fully defined Finder in configuration file.'
+                    'Cannot create intersection with not-fully defined Finder in configuration file.',
                 );
             }
 
@@ -976,7 +989,7 @@ final class ConfigurationResolver
                     }
 
                     return false;
-                }
+                },
             );
         }
 

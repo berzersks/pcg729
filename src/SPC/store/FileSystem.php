@@ -296,8 +296,9 @@ class FileSystem
         $classes = [];
         // 扫描目录，使用递归模式，相对路径模式，因为下面此路径要用作转换成namespace
         $files = FileSystem::scanDirFiles($dir, true, true);
+        var_dump($dir);
         if ($files === false) {
-            throw new FileSystemException('Cannot scan dir files during get classes psr-4 from dir: ' . $dir);
+            //throw new FileSystemException('Cannot scan dir files during get classes psr-4 from dir: ' . $dir);
         }
         foreach ($files as $v) {
             $pathinfo = pathinfo($v);

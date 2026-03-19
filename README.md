@@ -24,7 +24,7 @@ As dependências do projeto são gerenciadas pelo Composer. Certifique-se de ins
 ## Configuração
 1. Instale as dependências do projeto:
    ```bash
-   php composer.phar install
+   php ./composer install
    ```
 
 2. Configure os arquivos necessários em `config/` conforme o ambiente desejado.

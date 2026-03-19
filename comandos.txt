@@ -1,16 +1,30 @@
 rm -rf source/php-src
 
-sudo bin/spc build --build-cli "bcg729,psampler,opus,swoole,bcmath,bz2,ctype,curl,dom,exif,fileinfo,filter,gd,gmp,hash,iconv,intl,json,mbstring,mysqli,mysqlnd,openssl,pcntl,pcre,PDO,pdo_mysql,Phar,posix,readline,Reflection,session,soap,sockets,sodium,SPL,sqlite3,uv,standard,tokenizer,yaml,zip,zlib,uv"   --enable-zts
+sudo bin/spc build --build-cli "bcg729,psampler,opus,swoole,bcmath,bz2,ctype,curl,dom,exif,fileinfo,filter,gd,gmp,hash,iconv,intl,json,mbstring,mysqli,mysqlnd,openssl,pcntl,pcre,PDO,pdo_mysql,Phar,posix,readline,Reflection,session,soap,sockets,sodium,SPL,sqlite3,uv,standard,tokenizer,yaml,zip,zlib,uv" --debug   --enable-zts
 
 
-sudo bin/spc build --build-cli "opus" --enable-zts --debug
+sudo bin/spc build --build-cli "opus,bcg729,psampler" --enable-zts --debug
 
 bin/spc download --all -U "php-src:https://downloads.php.net/~edorian/php-8.5.0alpha2.tar.xz"
 
 
-bin/spc download psampler
+bin/spc download psampler,opus,bcg729
 
-rm -rf source/php-src/ext/swoole
+rm -rf source/php-src/ext/psampler
+
+
+rm -rf source/php-src/ext/bcg729 && rm -rf buildroot/bin/php && bin/spc del-download bcg729 && bin/spc download bcg729 && sudo bin/spc build --build-cli "bcg729" --enable-zts --debug
 
 
 rm -rf source/php-src/ext/bcg729 && rm -rf buildroot/bin/php && bin/spc del-download bcg729 && bin/spc download bcg729 && sudo bin/spc build --build-cli "bcg729" --enable-zts
+
+
+
+
+
+
+bin/spc del-download bcg729,opus,psampler &&
+
+
+rm -rf source/php-src/ext/psampler && rm -rf source/php-src/ext/bcg729 && rm -rf source/php-src/ext/opus && bin/spc download psampler,opus,bcg729
+bin/spc build --build-cli "psampler,opus,bcg729" --enable-zts --debug
